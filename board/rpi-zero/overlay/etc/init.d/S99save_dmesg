@@ -1,0 +1,19 @@
+#!/bin/sh
+case "$1" in
+  start)
+    sleep 5
+    dmesg > /boot/last-boot-dmesg.log
+    
+    # SSH + PTY diagnostics
+    {
+      echo "=== SSH Status ==="
+      ps | grep sshd
+      netstat -tlnp 2>/dev/null | grep :22 || ss -tlnp | grep :22
+      
+      echo "=== PTY Status ==="
+      mount | grep devpts
+      ls -la /dev/ptmx /dev/pts/
+      cat /proc/sys/kernel/pty/max  # Max PTYs available
+    } >> /boot/network-debug.log 2>&1
+    ;;
+esac

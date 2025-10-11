@@ -1,0 +1,16 @@
+HELLOAPP_VERSION = 1.0.0
+HELLOAPP_SITE = $(BR2_EXTERNAL_RPIZERO_PATH)/package/helloapp/src
+HELLOAPP_SITE_METHOD = local
+HELLOAPP_LICENSE = MIT
+HELLOAPP_LICENSE_FILES = LICENSE
+
+define HELLOAPP_BUILD_CMDS
+	$(TARGET_CC) $(TARGET_CFLAGS) $(TARGET_LDFLAGS) \
+		-o $(@D)/helloapp $(HELLOAPP_SITE)/helloapp.c
+endef
+
+define HELLOAPP_INSTALL_TARGET_CMDS
+	$(INSTALL) -D -m 0755 $(@D)/helloapp $(TARGET_DIR)/usr/bin/helloapp
+endef
+
+$(eval $(generic-package))

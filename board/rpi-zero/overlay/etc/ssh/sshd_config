@@ -1,0 +1,9 @@
+# Minimal sshd_config for headless Pi Zero (password auth)
+Port 22
+PermitRootLogin yes
+PasswordAuthentication yes
+KbdInteractiveAuthentication yes
+ChallengeResponseAuthentication no
+UsePAM no
+PrintMotd yes
+Subsystem sftp /usr/libexec/sftp-server

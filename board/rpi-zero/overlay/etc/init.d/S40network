@@ -1,0 +1,43 @@
+#!/bin/sh
+# Debug log to boot partition (persists across reboots)
+DEBUG_LOG=/boot/network-debug.log
+
+log_debug() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> $DEBUG_LOG
+}
+
+case "$1" in
+  start)
+    log_debug "=== Network init start ==="
+    
+    # Check if modules loaded
+    lsmod >> $DEBUG_LOG 2>&1
+    
+    # Load WiFi modules (if still =m in kernel)
+    log_debug "Loading modules..."
+    modprobe cfg80211 2>&1 | tee -a $DEBUG_LOG
+    modprobe mac80211 2>&1 | tee -a $DEBUG_LOG
+    modprobe brcmfmac 2>&1 | tee -a $DEBUG_LOG
+    
+    sleep 2
+    
+    # Check if wlan0 exists
+    log_debug "Network interfaces:"
+    ip link show >> $DEBUG_LOG 2>&1
+    
+    # Check firmware load
+    dmesg | grep -i brcm >> $DEBUG_LOG 2>&1
+    
+    # Bring up wlan0
+    log_debug "Starting wlan0..."
+    ifup wlan0 2>&1 | tee -a $DEBUG_LOG
+    
+    # Check wpa_supplicant
+    ps | grep wpa >> $DEBUG_LOG 2>&1
+    
+    log_debug "=== Network init complete ==="
+    ;;
+  stop)
+    ifdown wlan0
+    ;;
+esac
