@@ -31,3 +31,9 @@ make -j$(nproc)
 
 ## Write image
 Use Raspberry Pi Imager app or dd comand.
+
+## Connect to Pi
+```
+ssh root@ip-address
+```
+The default password is root.
