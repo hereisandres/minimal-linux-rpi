@@ -69,6 +69,6 @@ Vagrant.configure('2') do |config|
 		echo 'Fetching br-ext'
 		git clone git@github.com:hereisandres/minimal-linux-rpi.git work/br-ext
 	SHELL
-```
 
 end
+```
