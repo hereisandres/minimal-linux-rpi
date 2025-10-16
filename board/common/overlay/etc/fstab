@@ -1,6 +1,6 @@
 # Shared fstab: devpts for PTY + /boot mount
 /dev/mmcblk0p1  /boot       vfat   defaults,rw                              0  2
-devpts          /dev/pts    devpts defaults,gid=5,mode=620,ptmxmode=0666   0  0
+devpts          /dev/pts    devpts defaults,gid=5,mode=620,ptmxmode=0666    0  0
 
 # Reduce SD wear: tmpfs for logs (adjust size for 256 MB vs 512 MB RAM)
 tmpfs           /var/log    tmpfs  defaults,size=8M,nodev,nosuid,noexec    0  0
