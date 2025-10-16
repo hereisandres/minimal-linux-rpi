@@ -22,13 +22,24 @@ case "$1" in
     
     # Wait for USB bus enumeration (RT5372 dongle takes ~2s)
     log_debug "Waiting for USB WiFi dongle..."
-    for i in 1 2 3 4 5; do
-      if lsusb | grep -qiE "148f:5372|ralink"; then
-        log_debug "USB WiFi detected: $(lsusb | grep -iE '148f:5372|ralink')"
-        break
-      fi
-      sleep 1
-    done
+    if command -v lsusb >/dev/null; then
+      for i in 1 2 3 4 5; do
+        if lsusb | grep -qiE "148f:5372|ralink"; then
+          log_debug "USB WiFi detected: $(lsusb | grep -iE '148f:5372|ralink')"
+          break
+        fi
+        sleep 1
+      done
+    else
+      log_debug "lsusb not found; falling back to checking for wlan0 interface"
+      for i in 1 2 3 4 5; do
+        if [ -d /sys/class/net/wlan0 ]; then
+          log_debug "wlan0 interface appeared (USB WiFi likely present)"
+          break
+        fi
+        sleep 1
+      done
+    fi
     
     # Load RT5372 driver stack
     log_debug "Loading rt2800usb driver..."
