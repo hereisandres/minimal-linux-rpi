@@ -3,6 +3,19 @@
 
 case "$1" in
   start)
+    # Immediate write test (no sleep delay)
+    echo "$(date): S99save_dmesg started" > /boot/init-test.log 2>&1
+    
+    # Check if /boot is actually mounted and writable
+    if mount | grep -q "/boot"; then
+        echo "$(date): /boot mounted successfully" >> /boot/init-test.log
+    else
+        echo "$(date): ERROR - /boot not mounted" >> /boot/init-test.log
+        # Try manual mount as fallback
+        mount /dev/mmcblk0p1 /boot 2>>/boot/init-test.log && \
+            echo "$(date): Manual mount succeeded" >> /boot/init-test.log
+    fi
+
     sleep 5  # Let all init scripts complete
     
     {
