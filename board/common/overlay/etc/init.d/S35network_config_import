@@ -15,9 +15,8 @@ case "$1" in
         if [ -n "$SSID" ] && [ -n "$PSK_HASH" ]; then
             # Generate wpa_supplicant.conf with pre-hashed PSK
             cat > "$WPA_CONF" << EOF
-ctrl_interface=/var/run/wpa_supplicant
 update_config=1
-country=US
+#country=US
 
 network={
     ssid="$SSID"
