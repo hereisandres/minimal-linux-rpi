@@ -29,7 +29,7 @@ case "$1" in
       echo ""
       echo "=== SSH Status ==="
       ps | grep sshd
-      netstat -tlnp 2>/dev/null | grep :22 || ss -tlnp | grep :22
+      netstat -tlnp 2>/dev/null | grep :22 || echo "netstat failed, sshd status unknown"
       
       echo ""
       echo "=== PTY Status ==="
@@ -39,6 +39,20 @@ case "$1" in
       echo ""
       echo "=== Loaded Modules ==="
       lsmod
+
+      echo ""
+      echo "=== WiFi Status ==="
+      if ip link show wlan0 >/dev/null 2>&1; then
+          echo "wlan0 interface: $(ip link show wlan0 | grep 'state ')"
+          echo "wpa_supplicant: $(pgrep wpa_supplicant || echo 'not running')"
+          if [ -f /etc/wpa_supplicant/wpa_supplicant.conf ]; then
+              echo "wpa_supplicant.conf: exists"
+          else
+              echo "wpa_supplicant.conf: MISSING"
+          fi
+      else
+          echo "wlan0: not found"
+      fi
       
     } > /boot/last-boot-debug.log 2>&1
     ;;
