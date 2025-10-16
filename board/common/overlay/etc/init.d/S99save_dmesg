@@ -1,0 +1,32 @@
+#!/bin/sh
+# Persist boot logs + diagnostics to /boot (FAT partition, survives reboot)
+
+case "$1" in
+  start)
+    sleep 5  # Let all init scripts complete
+    
+    {
+      echo "=== Kernel Messages ==="
+      dmesg
+      
+      echo ""
+      echo "=== Network Interfaces ==="
+      ip addr show
+      
+      echo ""
+      echo "=== SSH Status ==="
+      ps | grep sshd
+      netstat -tlnp 2>/dev/null | grep :22 || ss -tlnp | grep :22
+      
+      echo ""
+      echo "=== PTY Status ==="
+      mount | grep devpts
+      ls -la /dev/pts/ 2>/dev/null || echo "/dev/pts not mounted"
+      
+      echo ""
+      echo "=== Loaded Modules ==="
+      lsmod
+      
+    } > /boot/last-boot-debug.log 2>&1
+    ;;
+esac

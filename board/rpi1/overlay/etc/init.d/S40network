@@ -1,0 +1,82 @@
+#!/bin/sh
+# Pi 1 Model B: USB WiFi (RT5372) + Ethernet init
+# Logs to /boot/network-debug.log (persists across reboots)
+
+DEBUG_LOG=/boot/network-debug.log
+
+log_debug() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> $DEBUG_LOG
+}
+
+case "$1" in
+  start)
+    log_debug "=== Pi 1 Network Init Start ==="
+    
+    # Ethernet comes up via kernel drivers (no modules needed)
+    if ip link show eth0 &>/dev/null; then
+      log_debug "eth0 detected (onboard Ethernet)"
+      ifup eth0 2>&1 | tee -a $DEBUG_LOG
+    else
+      log_debug "WARNING: eth0 not found"
+    fi
+    
+    # Wait for USB bus enumeration (RT5372 dongle takes ~2s)
+    log_debug "Waiting for USB WiFi dongle..."
+    for i in 1 2 3 4 5; do
+      if lsusb | grep -qiE "148f:5372|ralink"; then
+        log_debug "USB WiFi detected: $(lsusb | grep -iE '148f:5372|ralink')"
+        break
+      fi
+      sleep 1
+    done
+    
+    # Load RT5372 driver stack
+    log_debug "Loading rt2800usb driver..."
+    modprobe cfg80211 2>&1 | tee -a $DEBUG_LOG
+    modprobe mac80211 2>&1 | tee -a $DEBUG_LOG
+    modprobe rt2x00lib 2>&1 | tee -a $DEBUG_LOG
+    modprobe rt2x00usb 2>&1 | tee -a $DEBUG_LOG
+    modprobe rt2800lib 2>&1 | tee -a $DEBUG_LOG
+    modprobe rt2800usb 2>&1 | tee -a $DEBUG_LOG
+    
+    sleep 2  # Driver init delay
+    
+    # Verify wlan0 created
+    if ip link show wlan0 &>/dev/null; then
+      log_debug "wlan0 interface found"
+      ip link show wlan0 >> $DEBUG_LOG 2>&1
+      
+      # Check firmware load
+      dmesg | grep -i "rt2800usb\|firmware" | tail -5 >> $DEBUG_LOG 2>&1
+      
+      # Bring up WiFi
+      log_debug "Starting wlan0..."
+      ifup wlan0 2>&1 | tee -a $DEBUG_LOG
+      
+      # Verify WPA supplicant
+      sleep 3
+      if pgrep wpa_supplicant >/dev/null; then
+        log_debug "wpa_supplicant running (PID: $(pgrep wpa_supplicant))"
+      else
+        log_debug "ERROR: wpa_supplicant not started"
+      fi
+      
+    else
+      log_debug "ERROR: wlan0 not found after module load"
+      lsmod >> $DEBUG_LOG 2>&1
+      dmesg | tail -20 >> $DEBUG_LOG 2>&1
+    fi
+    
+    log_debug "=== Network Init Complete ==="
+    ;;
+    
+  stop)
+    ifdown wlan0 2>/dev/null
+    ifdown eth0 2>/dev/null
+    ;;
+    
+  *)
+    echo "Usage: $0 {start|stop}"
+    exit 1
+    ;;
+esac
