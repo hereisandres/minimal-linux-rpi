@@ -1,0 +1,41 @@
+# board/common/overlay/etc/init.d/S95lightup
+#!/bin/sh
+
+USER="root"
+DAEMON="python3"
+ROOT_DIR="/opt/lightup"
+PID_FILE="/var/run/lightup.pid"
+LOCK_FILE="/var/lock/lightup"
+
+case "$1" in
+  start)
+    echo -n "Checking configuration: "
+    if [ -f /boot/lightup_config.json ]; then
+        mv /boot/lightup_config.json $ROOT_DIR/config.json
+        if [ $? -eq 0 ]; then
+            echo "OK"
+            echo -n "Starting lightup service: "
+            start-stop-daemon --start --quiet --pidfile $PID_FILE \
+              --make-pidfile --background --chdir $ROOT_DIR \
+              --exec $DAEMON -- main.py
+            echo "OK"
+        else
+            echo "FAILED - Could not copy configuration"
+            exit 1
+        fi
+    else
+        echo "SKIP - No configuration file found (/boot/lightup_config.json)"
+        echo "Lightup service not started"
+        exit 0
+    fi
+    ;;
+  stop)
+    echo -n "Shutting down lightup service: "
+    start-stop-daemon --stop --quiet --pidfile $PID_FILE
+    rm -f $PID_FILE
+    echo "OK"
+    ;;
+  *)
+    echo "Usage: $0 {start|stop}"
+    exit 1
+esac
