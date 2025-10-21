@@ -1,1 +1,9 @@
-ntpdate time.nist.gov
+#!/bin/sh
+# Test epoch detection logic
+current_year=$(date +%Y)
+if [ "$current_year" -lt 2020 ]; then
+    echo "Epoch detected: $current_year"
+    date -s "2025-10-21 00:00:00"
+else
+    echo "Time appears reasonable: $current_year"
+fi
