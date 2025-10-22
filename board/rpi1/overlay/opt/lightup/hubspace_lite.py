@@ -443,7 +443,14 @@ class HubspaceClient:
             return None
         
         try:
-            status, text, headers = self._make_request('GET', f"{self.api_base}/devices/{device_id}")
+            headers = {
+                "user-agent": self.user_agent,
+                "Accept": "application/json",
+                "accept-encoding": "gzip",
+                "host": "semantics2.afero.net"
+            }
+            
+            status, text, response_headers = self._make_request('GET', f"{self.api_base}/accounts/{self.account_id}/metadevices/{device_id}/state", headers=headers)
             if status == 200:
                 return json.loads(text)
             else:

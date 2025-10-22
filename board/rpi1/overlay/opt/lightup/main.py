@@ -113,8 +113,26 @@ class HubspaceController:
                 success = self.api.control_light(self.device_id, power=False)
                 
             elif action == "toggle":
-                # For toggle, assume turn on with brightness if specified
-                success = self.api.control_light(self.device_id, power=True, brightness=brightness or 100)
+                # For toggle, check current state and switch accordingly
+                current_status = self.api.get_device_status(self.device_id)
+                if current_status and 'values' in current_status:
+                    # Parse the values array to find current power state
+                    current_power_value = 'off'
+                    for item in current_status['values']:
+                        if item.get('functionClass') == 'power':
+                            current_power_value = item.get('value', 'off')
+                            break
+                    
+                    current_power = current_power_value == 'on'
+                    # Toggle: if currently on, turn off; if off, turn on
+                    if current_power:
+                        success = self.api.control_light(self.device_id, power=False)
+                    else:
+                        success = self.api.control_light(self.device_id, power=True, brightness=brightness or 100)
+                else:
+                    # If we can't get status, default to turning on
+                    print("Warning: Could not get current status, defaulting to turn on")
+                    success = self.api.control_light(self.device_id, power=True, brightness=brightness or 100)
                 
             elif action == "brightness" and brightness is not None:
                 success = self.api.control_light(self.device_id, power=True, brightness=brightness)
@@ -172,9 +190,19 @@ class HubspaceController:
         
         try:
             status = self.api.get_device_status(self.device_id)
-            if status:
-                power = status.get('power', 'off') == 'on'
-                brightness = status.get('brightness', 0)
+            if status and 'values' in status:
+                # Parse the values array to find power and brightness
+                power_value = 'off'
+                brightness_value = 0
+                
+                for item in status['values']:
+                    if item.get('functionClass') == 'power':
+                        power_value = item.get('value', 'off')
+                    elif item.get('functionClass') == 'brightness':
+                        brightness_value = item.get('value', 0)
+                
+                power = power_value == 'on'
+                brightness = int(brightness_value)
                 
                 return {
                     "success": True,

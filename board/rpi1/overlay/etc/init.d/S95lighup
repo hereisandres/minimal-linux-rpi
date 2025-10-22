@@ -13,21 +13,24 @@ case "$1" in
     if [ -f /boot/lightup_config.json ]; then
         mv /boot/lightup_config.json $ROOT_DIR/config.json
         if [ $? -eq 0 ]; then
-            echo "OK"
-            echo -n "Starting lightup service: "
-            start-stop-daemon --start --quiet --pidfile $PID_FILE \
-              --make-pidfile --background --chdir $ROOT_DIR \
-              --exec $DAEMON -- main.py
-            echo "OK"
+            echo "OK (copied from boot)"
         else
             echo "FAILED - Could not copy configuration"
             exit 1
         fi
+    elif [ -f $ROOT_DIR/config.json ]; then
+        echo "OK (existing config found)"
     else
-        echo "SKIP - No configuration file found (/boot/lightup_config.json)"
+        echo "SKIP - No configuration file found"
         echo "Lightup service not started"
         exit 0
     fi
+    
+    echo -n "Starting lightup service: "
+    start-stop-daemon --start --quiet --pidfile $PID_FILE \
+      --make-pidfile --background --chdir $ROOT_DIR \
+      --exec $DAEMON -- main.py
+    echo "OK"
     ;;
   stop)
     echo -n "Shutting down lightup service: "

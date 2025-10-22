@@ -50,7 +50,7 @@ case "$1" in
     modprobe rt2800lib 2>&1 | tee -a $DEBUG_LOG
     modprobe rt2800usb 2>&1 | tee -a $DEBUG_LOG
     
-    sleep 2  # Driver init delay
+    sleep 3  # Driver init delay
     
     # Verify wlan0 created
     if ip link show wlan0 &>/dev/null; then
@@ -79,6 +79,11 @@ case "$1" in
     fi
     
     log_debug "=== Network Init Complete ==="
+
+    if command -v ntpdate &>/dev/null; then
+      log_debug "Network date update..."
+      ntpdate pool.ntp.org
+    fi
     ;;
     
   stop)
