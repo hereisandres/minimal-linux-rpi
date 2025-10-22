@@ -6,39 +6,69 @@ DAEMON="python3"
 ROOT_DIR="/opt/lightup"
 PID_FILE="/var/run/lightup.pid"
 LOCK_FILE="/var/lock/lightup"
+LOG_FILE="/boot/lightup.log"
+
+# Function to log with timestamp
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $1" >> "$LOG_FILE"
+    echo "$1"
+}
 
 case "$1" in
   start)
+    log_msg "=== Lightup service start attempt ==="
     echo -n "Checking configuration: "
     if [ -f /boot/lightup_config.json ]; then
+        log_msg "Found config in /boot/lightup_config.json"
         mv /boot/lightup_config.json $ROOT_DIR/config.json
         if [ $? -eq 0 ]; then
+            log_msg "Successfully copied config from boot to $ROOT_DIR/config.json"
             echo "OK (copied from boot)"
         else
+            log_msg "ERROR: Failed to copy configuration from boot"
             echo "FAILED - Could not copy configuration"
             exit 1
         fi
     elif [ -f $ROOT_DIR/config.json ]; then
+        log_msg "Using existing config at $ROOT_DIR/config.json"
         echo "OK (existing config found)"
     else
+        log_msg "No configuration file found - service not started"
         echo "SKIP - No configuration file found"
         echo "Lightup service not started"
         exit 0
     fi
     
     echo -n "Starting lightup service: "
+    log_msg "Attempting to start lightup service with start-stop-daemon"
     start-stop-daemon --start --quiet --pidfile $PID_FILE \
       --make-pidfile --background --chdir $ROOT_DIR \
-      --exec $DAEMON -- main.py
-    echo "OK"
+      --exec $DAEMON -- main.py >> "$LOG_FILE" 2>&1 
+    
+    if [ $? -eq 0 ]; then
+        log_msg "Lightup service started successfully (PID file: $PID_FILE)"
+        echo "OK"
+    else
+        log_msg "ERROR: Failed to start lightup service"
+        echo "FAILED"
+        exit 1
+    fi
     ;;
   stop)
+    log_msg "=== Lightup service stop request ==="
     echo -n "Shutting down lightup service: "
     start-stop-daemon --stop --quiet --pidfile $PID_FILE
+    if [ $? -eq 0 ]; then
+        log_msg "Lightup service stopped successfully"
+    else
+        log_msg "WARNING: stop-daemon returned non-zero exit code"
+    fi
     rm -f $PID_FILE
+    log_msg "Removed PID file $PID_FILE"
     echo "OK"
     ;;
   *)
+    log_msg "Invalid argument: $1"
     echo "Usage: $0 {start|stop}"
     exit 1
 esac
