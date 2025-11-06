@@ -1,0 +1,15 @@
+# Pi 1 Model B: Ethernet (eth0) + USB WiFi (wlan0)
+
+auto lo
+iface lo inet loopback
+
+# Wired Ethernet (primary, faster setup)
+auto eth0
+iface eth0 inet dhcp
+
+# USB WiFi dongle (RT5372 via rt2800usb)
+auto wlan0
+iface wlan0 inet dhcp
+    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
+    # Wait for USB enumeration before bringing up
+    pre-up sleep 2

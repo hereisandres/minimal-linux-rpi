@@ -1,0 +1,59 @@
+#!/bin/sh
+# Persist boot logs + diagnostics to /boot (FAT partition, survives reboot)
+
+case "$1" in
+  start)
+    # Immediate write test (no sleep delay)
+    echo "$(date): S99save_dmesg started" > /boot/init-test.log 2>&1
+    
+    # Check if /boot is actually mounted and writable
+    if mount | grep -q "/boot"; then
+        echo "$(date): /boot mounted successfully" >> /boot/init-test.log
+    else
+        echo "$(date): ERROR - /boot not mounted" >> /boot/init-test.log
+        # Try manual mount as fallback
+        mount /dev/mmcblk0p1 /boot 2>>/boot/init-test.log && \
+            echo "$(date): Manual mount succeeded" >> /boot/init-test.log
+    fi
+
+    sleep 5  # Let all init scripts complete
+    
+    {
+      echo "=== Kernel Messages ==="
+      dmesg
+      
+      echo ""
+      echo "=== Network Interfaces ==="
+      ip addr show
+      
+      echo ""
+      echo "=== SSH Status ==="
+      ps | grep sshd
+      netstat -tlnp 2>/dev/null | grep :22 || echo "netstat failed, sshd status unknown"
+      
+      echo ""
+      echo "=== PTY Status ==="
+      mount | grep devpts
+      ls -la /dev/pts/ 2>/dev/null || echo "/dev/pts not mounted"
+      
+      echo ""
+      echo "=== Loaded Modules ==="
+      lsmod
+
+      echo ""
+      echo "=== WiFi Status ==="
+      if ip link show wlan0 >/dev/null 2>&1; then
+          echo "wlan0 interface: $(ip link show wlan0 | grep 'state ')"
+          echo "wpa_supplicant: $(pgrep wpa_supplicant || echo 'not running')"
+          if [ -f /etc/wpa_supplicant/wpa_supplicant.conf ]; then
+              echo "wpa_supplicant.conf: exists"
+          else
+              echo "wpa_supplicant.conf: MISSING"
+          fi
+      else
+          echo "wlan0: not found"
+      fi
+      
+    } > /boot/last-boot-debug.log 2>&1
+    ;;
+esac

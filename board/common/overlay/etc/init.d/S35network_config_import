@@ -1,0 +1,32 @@
+#!/bin/sh
+# filepath: board/common/overlay/etc/init.d/S35network_config_import
+# Converts Pi Imager netplan format to BusyBox networking
+
+BOOT_CONFIG="/boot/network-config"
+WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
+
+case "$1" in
+  start)
+    if [ -f "$BOOT_CONFIG" ]; then
+        # Extract SSID and PSK from YAML (brittle but functional)
+        SSID=$(grep -A1 "access-points:" "$BOOT_CONFIG" | grep '"' | cut -d'"' -f2)
+        PSK_HASH=$(grep "password:" "$BOOT_CONFIG" | cut -d'"' -f2)
+        
+        if [ -n "$SSID" ] && [ -n "$PSK_HASH" ]; then
+            # Generate wpa_supplicant.conf with pre-hashed PSK
+            cat > "$WPA_CONF" << EOF
+update_config=1
+#country=US
+
+network={
+    ssid="$SSID"
+    psk=$PSK_HASH
+    key_mgmt=WPA-PSK
+}
+EOF
+            echo "Imported WiFi config: SSID=$SSID"
+            rm "$BOOT_CONFIG"  # Prevent re-import on next boot
+        fi
+    fi
+    ;;
+esac
